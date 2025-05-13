@@ -3,12 +3,16 @@ package usecase
 import (
 	"context"
 	"ct-backend-course-baonguyen/internal/entity"
+	"ct-backend-course-baonguyen/pkg/auth"
+	"fmt"
 	"io"
+	"time"
 )
 
 type UserStore interface {
 	Save(info entity.UserInfo) error
 	Get(username string) (entity.UserInfo, error)
+	UpdateImageURL(username string, imageURL string) error
 }
 
 type ImageBucket interface {
@@ -41,13 +45,55 @@ func (uc *ucImplement) Register(ctx context.Context, req *entity.RegisterRequest
 }
 
 func (uc *ucImplement) Login(ctx context.Context, req *entity.LoginRequest) (*entity.LoginResponse, error) {
-	panic("TODO implement me")
+	// Get user information from storage
+	userInfo, err := uc.userStore.Get(req.Username)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if password is correct
+	if userInfo.Password != req.Password {
+		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	// Generate JWT token with 24 hour expiration
+	token, err := auth.GenerateToken(req.Username, 24*time.Hour)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entity.LoginResponse{Token: token}, nil
 }
 
 func (uc *ucImplement) Self(ctx context.Context, req *entity.SelfRequest) (*entity.SelfResponse, error) {
-	panic("TODO implement me")
+	// Get user information from storage
+	userInfo, err := uc.userStore.Get(req.Username)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entity.SelfResponse{
+		Username: userInfo.Username,
+		FullName: userInfo.FullName,
+		Address:  userInfo.Address,
+		ImageURL: userInfo.ImageURL,
+	}, nil
 }
 
-func (uc *ucImplement) UploadImage(ctx context.Context, req *entity.RegisterRequest) (*entity.RegisterResponse, error) {
-	panic("TODO implement me")
+func (uc *ucImplement) UploadImage(ctx context.Context, req *entity.UploadImageRequest) (*entity.UploadImageResponse, error) {
+	// Save image to bucket
+	imageURL, err := uc.imgBucket.SaveImage(ctx, req.ImageName, req.ImageData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to save image: %w", err)
+	}
+
+	// Update user info with image URL
+	err = uc.userStore.UpdateImageURL(req.Username, imageURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user image URL: %w", err)
+	}
+
+	return &entity.UploadImageResponse{
+		ImageURL: imageURL,
+	}, nil
 }
