@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func NewFake() *fake {
@@ -34,6 +35,20 @@ type fake struct {
 func (f *fake) SaveImage(ctx context.Context, name string, r io.Reader) (string, error) {
 	// Generate file path
 	fileName := filepath.Base(name)
+
+	ext := strings.ToLower(filepath.Ext(fileName))
+	validExtensions := map[string]bool{
+		".jpg":  true,
+		".jpeg": true,
+		".png":  true,
+		".gif":  true,
+		".bmp":  true,
+		".webp": true,
+	}
+	if !validExtensions[ext] {
+		return "", fmt.Errorf("unsupported image format: %s. Supported formats: jpg, jpeg, png, gif, bmp, webp", ext)
+	}
+
 	filePath := filepath.Join(f.uploadDir, fileName)
 
 	fmt.Printf("DEBUG: Saving file to path: %s\n", filePath)

@@ -45,19 +45,16 @@ func (uc *ucImplement) Register(ctx context.Context, req *entity.RegisterRequest
 }
 
 func (uc *ucImplement) Login(ctx context.Context, req *entity.LoginRequest) (*entity.LoginResponse, error) {
-	// Get user information from storage
 	userInfo, err := uc.userStore.Get(req.Username)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check if password is correct
 	if userInfo.Password != req.Password {
-		return nil, fmt.Errorf("invalid credentials")
+		return nil, fmt.Errorf("invalid password")
 	}
 
-	// Generate JWT token with 24 hour expiration
-	token, err := auth.GenerateToken(req.Username, 24*time.Hour)
+	token, err := auth.GenerateToken(req.Username, 1*time.Hour)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +63,6 @@ func (uc *ucImplement) Login(ctx context.Context, req *entity.LoginRequest) (*en
 }
 
 func (uc *ucImplement) Self(ctx context.Context, req *entity.SelfRequest) (*entity.SelfResponse, error) {
-	// Get user information from storage
 	userInfo, err := uc.userStore.Get(req.Username)
 	if err != nil {
 		return nil, err
@@ -81,13 +77,11 @@ func (uc *ucImplement) Self(ctx context.Context, req *entity.SelfRequest) (*enti
 }
 
 func (uc *ucImplement) UploadImage(ctx context.Context, req *entity.UploadImageRequest) (*entity.UploadImageResponse, error) {
-	// Save image to bucket
 	imageURL, err := uc.imgBucket.SaveImage(ctx, req.ImageName, req.ImageData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save image: %w", err)
 	}
 
-	// Update user info with image URL
 	err = uc.userStore.UpdateImageURL(req.Username, imageURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update user image URL: %w", err)

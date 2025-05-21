@@ -4,8 +4,9 @@ import (
 	"context"
 	"ct-backend-course-baonguyen/internal/entity"
 	"fmt"
-	"github.com/labstack/echo/v4"
 	"net/http"
+
+	"github.com/labstack/echo/v4"
 )
 
 type UseCase interface {
@@ -55,12 +56,10 @@ func (h *Handler) Self(c echo.Context) error {
 	// Extract username from JWT token (set by middleware)
 	username := c.Get("username").(string)
 
-	// Prepare request
 	req := &entity.SelfRequest{
 		Username: username,
 	}
 
-	// Call usecase
 	resp, err := h.uc.Self(context.TODO(), req)
 	if err != nil {
 		return fmt.Errorf("uc.Self: %w", err)
@@ -83,17 +82,14 @@ func (h *Handler) UploadImage(c echo.Context) error {
 	}
 	defer src.Close()
 
-	// Extract username from JWT token (set by middleware)
 	username := c.Get("username").(string)
 
-	// Prepare request
 	req := &entity.UploadImageRequest{
-		Username: username,
+		Username:  username,
 		ImageData: src,
 		ImageName: file.Filename,
 	}
 
-	// Call usecase
 	resp, err := h.uc.UploadImage(context.TODO(), req)
 	if err != nil {
 		return fmt.Errorf("uc.UploadImage: %w", err)
